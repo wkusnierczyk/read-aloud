@@ -1,6 +1,43 @@
 import argparse
 import sys
+from email.utils import parseaddr
+from importlib import metadata
+
 from aloud.core import AloudEngine, ContentFetcher
+
+PACKAGE_NAME = "aloud"
+SOURCE_URL = "https://github.com/wkusnierczyk/read-aloud"
+LICENSE_NAME = "MIT"
+LICENSE_URL = "https://opensource.org/licenses/MIT"
+
+
+def _about_message():
+    version = "unknown"
+    summary = "Read text or websites aloud."
+    developer = "unknown"
+
+    try:
+        dist_meta = metadata.metadata(PACKAGE_NAME)
+        version = metadata.version(PACKAGE_NAME)
+        summary = dist_meta.get("Summary") or summary
+        author = dist_meta.get("Author-email") or dist_meta.get("Author") or ""
+        _, email_addr = parseaddr(author)
+        if email_addr:
+            developer = f"mailto:{email_addr}"
+        elif author:
+            developer = author
+    except metadata.PackageNotFoundError:
+        pass
+
+    return "\n".join(
+        [
+            f"{PACKAGE_NAME}: {summary}",
+            f"├─ version:    {version}",
+            f"├─ developer:  {developer}",
+            f"├─ source:     {SOURCE_URL}",
+            f"└─ licence:    {LICENSE_NAME} {LICENSE_URL}",
+        ]
+    )
 
 
 def main():
@@ -26,8 +63,18 @@ def main():
         action="store_true",
         help="List available system voices and exit",
     )
+    parser.add_argument(
+        "--about",
+        action="store_true",
+        help="Show package info and exit",
+    )
 
     args = parser.parse_args()
+
+    if args.about:
+        print(_about_message())
+        sys.exit(0)
+
     engine = AloudEngine()
 
     # 1. Handle "List Voices" command

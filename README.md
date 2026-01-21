@@ -1,8 +1,10 @@
 # Read Aloud
 
-Read text or websites aloud by driving the platform-native speech commands
-(`say`, `System.Speech`, `espeak`); `pyttsx3` is only used as a fallback when
-those native tools are unavailable. 
+Read Aloud is a BWYN (Buiild What You Need0 convenience mini-project exposing text-to-speech facilty as a CLI, a service, and a GUI.
+
+It reads text or websites aloud by driving the platform-native speech commands
+(`say`, `System.Speech`, `espeak`).
+When those are not available, `pyttsx3` is used as a fallback. 
 
 Includes:
 - Core library (`aloud.core`)
@@ -14,20 +16,27 @@ Includes:
 
 ![Architecture diagram](architecture/diagram.png)
 
-
 ## Install
 
 ```sh
 pip install -e .
+
+# or
+make install
 ```
 
-Dev tools:
+Develoopment tools:
 
 ```sh
 pip install -e .[dev]
+
+# or
+make install-dev
 ```
 
 ## CLI
+
+The CLI provides convenience options to read from a URL, from local file, or directly from an argument or `stdin`.
 
 ```sh
 aloud --url https://example.com
@@ -36,7 +45,7 @@ aloud "Hello, this is a test."
 echo "Piping works too" | aloud
 ```
 
-Options:
+Voide options:
 
 ```sh
 aloud --list-voices
@@ -49,13 +58,19 @@ Run:
 
 ```sh
 python3 -m uvicorn aloud.api:app --reload
+
+# or
+make backend-run
 ```
 
-Endpoints:
-- `GET /health`
-- `GET /voices`
-- `POST /read` (body: `{ "text": "...", "voice": "...", "speed": 1.0 }` or `{ "url": "..." }`)
-- `POST /stop`
+The API provides several endpoints.
+
+| Endpoint      | Description                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| `GET /health` | Health check.                                                                                           |
+| `GET /voices` | List available voices.                                                                                  |
+| `POST /read`  | Read text or URL; body: `{ "text": "...", "voice": "...", "speed": 1.0 }` or `{ "url": "..." }`.        |
+| `POST /stop`  | Stop current reading.                                                                                   |
 
 Only one of `text` or `url` is allowed per request.
 
@@ -70,19 +85,8 @@ make frontend-install
 Run web UI:
 
 ```sh
-make dev-fullstack
+make fullstack-run
 ```
 
 The web UI appears at `http://localhost:19006` by default.
 
-## Make Targets
-
-- `make install` / `make install-dev`
-- `make build`
-- `make test`
-- `make format`
-- `make lint`
-- `make deploy` (API only)
-- `make dev-fullstack` (API + Expo web)
-- `make clean`
-- `make architecture-png`
