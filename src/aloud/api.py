@@ -1,5 +1,6 @@
 import threading
 from typing import Optional
+from importlib import metadata
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +9,14 @@ from pydantic import BaseModel
 from aloud.core import AloudEngine, ContentFetcher, PlaybackHandle
 
 
-app = FastAPI(title="Aloud API", version="0.1.0")
+def _package_version() -> str:
+    try:
+        return metadata.version("aloud")
+    except metadata.PackageNotFoundError:
+        return "unknown"
+
+
+app = FastAPI(title="Aloud API", version=_package_version())
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
