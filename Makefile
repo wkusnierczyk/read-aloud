@@ -17,7 +17,7 @@ BUILD = $(PYTHON) -m build
 IP_CMD = $(PYTHON) -c "import socket; ip='127.0.0.1'; sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); \
 sock.connect(('8.8.8.8', 80)); ip=sock.getsockname()[0]; sock.close(); print(ip)"
 
-.PHONY: install install-dev build test format lint backend-run dev-fullstack frontend-install frontend-web frontend-start clean cli-run list-voices architecture-png
+.PHONY: install install-dev build test format format-check lint backend-run dev-fullstack frontend-install frontend-web frontend-start clean cli-run list-voices architecture-png
 
 install:
 	$(PYTHON) -m pip install -e .
@@ -33,6 +33,9 @@ test:
 
 format:
 	$(BLACK) src tests
+
+format-check:
+	$(BLACK) --check src tests
 
 lint:
 	$(RUFF) check src tests

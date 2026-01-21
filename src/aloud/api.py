@@ -68,7 +68,8 @@ def read(payload: ReadRequest) -> dict:
     text = _resolve_text(payload)
     engine = AloudEngine()
     engine.load_text(text).set_properties(
-        voice_name=payload.voice, speed_multiplier=payload.speed
+        voice_name=payload.voice,
+        speed_multiplier=payload.speed,
     )
     handle = engine.speak_async()
     _set_playback(handle)
