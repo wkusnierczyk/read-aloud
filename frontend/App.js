@@ -11,6 +11,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import Slider from "@react-native-community/slider";
 
 const DEFAULT_API = "http://localhost:8000";
 
@@ -29,6 +31,9 @@ const bodyFont = Platform.select({
 export default function App() {
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
+  const [voices, setVoices] = useState([]);
+  const [voiceId, setVoiceId] = useState("");
+  const [speed, setSpeed] = useState(1.0);
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -49,6 +54,21 @@ export default function App() {
     }).start();
   }, [fadeAnim]);
 
+  useEffect(() => {
+    const fetchVoices = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/voices`);
+        const data = await response.json();
+        if (response.ok && Array.isArray(data?.voices)) {
+          setVoices(data.voices);
+        }
+      } catch (err) {
+        setStatus("Unable to load voices from the API.");
+      }
+    };
+    fetchVoices();
+  }, [apiBaseUrl]);
+
   const handleRead = async () => {
     const trimmedUrl = url.trim();
     const trimmedText = text.trim();
@@ -62,6 +82,10 @@ export default function App() {
     }
 
     const payload = trimmedUrl ? { url: trimmedUrl } : { text: trimmedText };
+    if (voiceId) {
+      payload.voice = voiceId;
+    }
+    payload.speed = speed;
 
     setIsLoading(true);
     setStatus("");
@@ -78,6 +102,18 @@ export default function App() {
       setStatus("Reading started. Check your system audio output.");
     } catch (err) {
       setStatus(err?.message || "Unable to reach the API.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setIsLoading(true);
+    try {
+      await fetch(`${apiBaseUrl}/stop`, { method: "POST" });
+      setStatus("Reading stopped.");
+    } catch (err) {
+      setStatus("Unable to stop the reader.");
     } finally {
       setIsLoading(false);
     }
@@ -119,21 +155,68 @@ export default function App() {
             multiline
           />
 
-          <Pressable
-            onPress={handleRead}
-            disabled={!isReady || isLoading}
-            style={({ pressed }) => [
-              styles.button,
-              (!isReady || isLoading) && styles.buttonDisabled,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#f9f3e9" />
-            ) : (
-              <Text style={styles.buttonText}>Read Aloud</Text>
-            )}
-          </Pressable>
+          <Text style={styles.label}>Voice</Text>
+          <View style={styles.pickerWrap}>
+            <Picker
+              selectedValue={voiceId}
+              onValueChange={setVoiceId}
+              style={styles.picker}
+            >
+              <Picker.Item label="System default" value="" />
+              {voices.map((voice) => (
+                <Picker.Item
+                  key={voice.id}
+                  label={`${voice.name}${voice.locale ? ` (${voice.locale})` : ""}`}
+                  value={voice.voice_id || voice.id}
+                />
+              ))}
+            </Picker>
+          </View>
+
+          <View style={styles.speedRow}>
+            <Text style={styles.label}>Speed</Text>
+            <Text style={styles.speedValue}>{speed.toFixed(1)}x</Text>
+          </View>
+          <Slider
+            style={styles.slider}
+            minimumValue={0.6}
+            maximumValue={1.8}
+            step={0.1}
+            value={speed}
+            onValueChange={setSpeed}
+            minimumTrackTintColor="#2f4f4f"
+            maximumTrackTintColor="#d8c6b8"
+            thumbTintColor="#2f4f4f"
+          />
+
+          <View style={styles.buttonRow}>
+            <Pressable
+              onPress={handleRead}
+              disabled={!isReady || isLoading}
+              style={({ pressed }) => [
+                styles.button,
+                (!isReady || isLoading) && styles.buttonDisabled,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#f9f3e9" />
+              ) : (
+                <Text style={styles.buttonText}>Read Aloud</Text>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={handleStop}
+              disabled={isLoading}
+              style={({ pressed }) => [
+                styles.buttonSecondary,
+                isLoading && styles.buttonDisabled,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.buttonTextSecondary}>Stop</Text>
+            </Pressable>
+          </View>
 
           {status ? <Text style={styles.status}>{status}</Text> : null}
           <Text style={styles.hint}>
@@ -231,9 +314,47 @@ const styles = StyleSheet.create({
     minHeight: 120,
     textAlignVertical: "top",
   },
+  pickerWrap: {
+    backgroundColor: "#fefaf6",
+    borderColor: "#e2cbb9",
+    borderWidth: 1,
+    borderRadius: 14,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  picker: {
+    color: "#2b2623",
+  },
+  speedRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  speedValue: {
+    fontFamily: bodyFont,
+    color: "#2b2623",
+  },
+  slider: {
+    marginBottom: 18,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
   button: {
+    flex: 1,
     backgroundColor: "#2f4f4f",
     borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  buttonSecondary: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2f4f4f",
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 4,
@@ -248,6 +369,12 @@ const styles = StyleSheet.create({
     fontFamily: bodyFont,
     fontSize: 16,
     color: "#f9f3e9",
+    letterSpacing: 0.4,
+  },
+  buttonTextSecondary: {
+    fontFamily: bodyFont,
+    fontSize: 16,
+    color: "#2f4f4f",
     letterSpacing: 0.4,
   },
   status: {

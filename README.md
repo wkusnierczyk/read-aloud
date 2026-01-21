@@ -1,53 +1,101 @@
-````markdown
-# Aloud CLI
+# Read Aloud
 
-A native command-line tool to read text, files, or websites aloud using your system's TTS engine.
+Read text or websites aloud using native TTS on macOS, Windows, or Linux. Includes:
+- Core library (`aloud.core`)
+- CLI (`aloud.cli`)
+- API service (`aloud.api`)
+- React Native (Expo) frontend
 
-## Installation
+## Architecture
 
-You can install this tool locally in editable mode.
+```mermaid
+flowchart LR
+    subgraph Local["Local Environment"]
+        Core["Core Library\n(aloud.core)"]
+        CLI["CLI\n(aloud.cli)"]
+        API["API Service\n(aloud.api)"]
+        Frontend["Frontend\n(React Native / Expo)"]
+    end
 
-```bash
-# From the project root
+    TTS["Native TTS\n(macOS say / Windows System.Speech / espeak)"]
+    Fallback["pyttsx3\n(optional)"]
+    Net["HTTP / JSON"]
+
+    CLI --> Core
+    API --> Core
+    Frontend -->|POST /read| Net --> API
+    Core --> TTS
+    Core --> Fallback
+```
+
+## Install
+
+```sh
 pip install -e .
 ```
 
-## Usage
+Dev tools:
 
-Once installed, you can use the command `aloud` from anywhere in your terminal.
+```sh
+pip install -e .[dev]
+```
 
-### 1. Read a Website
-```bash
+## CLI
+
+```sh
 aloud --url https://example.com
-```
-
-### 2. Read a File
-```bash
 aloud --file notes.txt
-```
-
-### 3. Read Direct Text
-```bash
 aloud "Hello, this is a test."
-```
-
-### 4. Piped Input
-```bash
 echo "Piping works too" | aloud
 ```
 
-### Configuration
+Options:
 
-* **Change Speed:** Use `--speed` (e.g., `0.8` for slow, `1.5` for fast).
-    ```bash
-    aloud --url https://example.com --speed 1.25
-    ```
-* **Change Voice:** Use `--voice` with a name or ID.
-    ```bash
-    # First, list available voices
-    aloud --list-voices
-    
-    # Then use a unique part of the name
-    aloud --url https://example.com --voice "Zira"
-    ```
-````
+```sh
+aloud --list-voices
+aloud --url https://example.com --voice "Alex" --speed 1.2
+```
+
+## API
+
+Run:
+
+```sh
+python3 -m uvicorn aloud.api:app --reload
+```
+
+Endpoints:
+- `GET /health`
+- `GET /voices`
+- `POST /read` (body: `{ "text": "...", "voice": "...", "speed": 1.0 }` or `{ "url": "..." }`)
+- `POST /stop`
+
+Only one of `text` or `url` is allowed per request.
+
+## Frontend (Expo)
+
+Install dependencies:
+
+```sh
+make frontend-install
+```
+
+Run web UI:
+
+```sh
+make dev
+```
+
+The web UI appears at `http://localhost:19006` by default.
+
+## Make Targets
+
+- `make install` / `make install-dev`
+- `make build`
+- `make test`
+- `make format`
+- `make lint`
+- `make deploy` (API only)
+- `make dev` (API + Expo web)
+- `make clean`
+- `make architecture-png`

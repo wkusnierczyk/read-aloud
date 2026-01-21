@@ -2,6 +2,24 @@ import json
 import shutil
 import sys
 import subprocess
+import threading
+
+
+class PlaybackHandle:
+    def __init__(self, process=None, engine=None, thread=None):
+        self._process = process
+        self._engine = engine
+        self._thread = thread
+
+    def stop(self):
+        if self._engine:
+            try:
+                self._engine.stop()
+            except Exception:
+                pass
+        if self._process and self._process.poll() is None:
+            self._process.terminate()
+        return self
 
 import pyttsx3
 import requests
@@ -245,6 +263,25 @@ class AloudEngine:
         self._engine.runAndWait()
         return self
 
+    def speak_async(self):
+        if not self._text:
+            return None
+        if self._engine:
+            thread = threading.Thread(target=self._run_pyttsx3, daemon=True)
+            thread.start()
+            return PlaybackHandle(engine=self._engine, thread=thread)
+        if sys.platform == "darwin":
+            return PlaybackHandle(process=self._start_macos())
+        if sys.platform.startswith("linux"):
+            return PlaybackHandle(process=self._start_linux())
+        if sys.platform.startswith("win"):
+            return PlaybackHandle(process=self._start_windows())
+        self._raise_init_error()
+
+    def _run_pyttsx3(self):
+        self._engine.say(self._text)
+        self._engine.runAndWait()
+
     def _speak_macos(self):
         cmd = ["say"]
         if self._voice_name:
@@ -258,6 +295,19 @@ class AloudEngine:
         except subprocess.CalledProcessError as exc:
             raise RuntimeError(f"Failed to speak via 'say': {exc}") from exc
         return self
+
+    def _start_macos(self):
+        cmd = ["say"]
+        if self._voice_name:
+            cmd.extend(["-v", self._voice_name])
+        if self._speed_multiplier and self._speed_multiplier != 1.0:
+            rate = max(80, int(200 * self._speed_multiplier))
+            cmd.extend(["-r", str(rate)])
+        cmd.append(self._text)
+        try:
+            return subprocess.Popen(cmd)
+        except Exception as exc:
+            raise RuntimeError(f"Failed to speak via 'say': {exc}") from exc
 
     def _speak_linux(self):
         voice_cmd = None
@@ -280,6 +330,27 @@ class AloudEngine:
         except subprocess.CalledProcessError as exc:
             raise RuntimeError(f"Failed to speak via '{voice_cmd}': {exc}") from exc
         return self
+
+    def _start_linux(self):
+        voice_cmd = None
+        for candidate in ("espeak-ng", "espeak"):
+            if shutil.which(candidate):
+                voice_cmd = candidate
+                break
+        if not voice_cmd:
+            self._raise_init_error()
+
+        cmd = [voice_cmd]
+        if self._voice_name:
+            cmd.extend(["-v", self._voice_name])
+        if self._speed_multiplier and self._speed_multiplier != 1.0:
+            rate = max(80, int(175 * self._speed_multiplier))
+            cmd.extend(["-s", str(rate)])
+        cmd.append(self._text)
+        try:
+            return subprocess.Popen(cmd)
+        except Exception as exc:
+            raise RuntimeError(f"Failed to speak via '{voice_cmd}': {exc}") from exc
 
     def _speak_windows(self):
         powershell = shutil.which("pwsh") or shutil.which("powershell")
@@ -309,3 +380,34 @@ class AloudEngine:
         except subprocess.CalledProcessError as exc:
             raise RuntimeError("Failed to speak via PowerShell.") from exc
         return self
+
+    def _start_windows(self):
+        powershell = shutil.which("pwsh") or shutil.which("powershell")
+        if not powershell:
+            self._raise_init_error()
+
+        command = (
+            "Add-Type -AssemblyName System.Speech; "
+            "$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+            "$text = [Console]::In.ReadToEnd(); "
+        )
+        if self._voice_name:
+            command += f"$synth.SelectVoice('{self._voice_name}'); "
+        if self._speed_multiplier and self._speed_multiplier != 1.0:
+            rate = int(round((self._speed_multiplier - 1.0) * 5))
+            rate = max(-10, min(10, rate))
+            command += f"$synth.Rate = {rate}; "
+        command += "$synth.Speak($text);"
+
+        try:
+            process = subprocess.Popen(
+                [powershell, "-NoProfile", "-Command", command],
+                stdin=subprocess.PIPE,
+                text=True,
+            )
+            if process.stdin:
+                process.stdin.write(self._text)
+                process.stdin.close()
+            return process
+        except Exception as exc:
+            raise RuntimeError("Failed to speak via PowerShell.") from exc

@@ -1,10 +1,11 @@
+import threading
 from typing import Optional
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from aloud.core import AloudEngine, ContentFetcher
+from aloud.core import AloudEngine, ContentFetcher, PlaybackHandle
 
 
 app = FastAPI(title="Aloud API", version="0.1.0")
@@ -14,6 +15,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_playback_lock = threading.Lock()
+_current_playback = None
 
 
 class ReadRequest(BaseModel):
@@ -40,11 +44,12 @@ def _resolve_text(payload: ReadRequest) -> str:
     return payload.text or ""
 
 
-def _run_read(text: str, voice: Optional[str], speed: float) -> None:
-    engine = AloudEngine()
-    engine.load_text(text).set_properties(
-        voice_name=voice, speed_multiplier=speed
-    ).speak()
+def _set_playback(handle: Optional[PlaybackHandle]) -> None:
+    global _current_playback
+    with _playback_lock:
+        if _current_playback:
+            _current_playback.stop()
+        _current_playback = handle
 
 
 @app.get("/health")
@@ -59,7 +64,18 @@ def voices() -> dict:
 
 
 @app.post("/read")
-def read(payload: ReadRequest, background_tasks: BackgroundTasks) -> dict:
+def read(payload: ReadRequest) -> dict:
     text = _resolve_text(payload)
-    background_tasks.add_task(_run_read, text, payload.voice, payload.speed)
+    engine = AloudEngine()
+    engine.load_text(text).set_properties(
+        voice_name=payload.voice, speed_multiplier=payload.speed
+    )
+    handle = engine.speak_async()
+    _set_playback(handle)
     return {"status": "started"}
+
+
+@app.post("/stop")
+def stop() -> dict:
+    _set_playback(None)
+    return {"status": "stopped"}
