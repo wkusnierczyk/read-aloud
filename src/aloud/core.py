@@ -1,8 +1,12 @@
 import json
 import shutil
-import sys
 import subprocess
+import sys
 import threading
+
+import pyttsx3
+import requests
+from bs4 import BeautifulSoup
 
 
 class PlaybackHandle:
@@ -20,10 +24,6 @@ class PlaybackHandle:
         if self._process and self._process.poll() is None:
             self._process.terminate()
         return self
-
-import pyttsx3
-import requests
-from bs4 import BeautifulSoup
 
 
 class ContentFetcher:
