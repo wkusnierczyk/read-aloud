@@ -1,10 +1,11 @@
 # Read Aloud
 
-Read Aloud is a BWYN (Buiild What You Need0 convenience mini-project exposing text-to-speech facilty as a CLI, a service, and a GUI.
-
-It reads text or websites aloud by driving the platform-native speech commands
+Read Aloud reads text or websites aloud by driving the platform-native speech commands
 (`say`, `System.Speech`, `espeak`).
 When those are not available, `pyttsx3` is used as a fallback. 
+
+> Read Aloud is a BWYN (Buiild What You Need) convenience mini-project exposing text-to-speech facilty as a CLI, a service, and a GUI.
+
 
 ## Table of Contents
 
