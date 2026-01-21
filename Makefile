@@ -23,7 +23,7 @@ install:
 	$(PYTHON) -m pip install -e .
 
 install-dev:
-	$(PYTHON) -m pip install -e .[dev]
+	$(PYTHON) -m pip install -e . -r requirements-dev.txt
 
 build:
 	$(BUILD)
