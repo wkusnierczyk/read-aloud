@@ -1,6 +1,10 @@
 # Read Aloud
 
-Read text or websites aloud using native TTS on macOS, Windows, or Linux. Includes:
+Read text or websites aloud by driving the platform-native speech commands
+(`say`, `System.Speech`, `espeak`); `pyttsx3` is only used as a fallback when
+those native tools are unavailable. 
+
+Includes:
 - Core library (`aloud.core`)
 - CLI (`aloud.cli`)
 - API service (`aloud.api`)
@@ -8,25 +12,8 @@ Read text or websites aloud using native TTS on macOS, Windows, or Linux. Includ
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph Local["Local Environment"]
-        Core["Core Library\n(aloud.core)"]
-        CLI["CLI\n(aloud.cli)"]
-        API["API Service\n(aloud.api)"]
-        Frontend["Frontend\n(React Native / Expo)"]
-    end
+![Architecture diagram](architecture/diagram.png)
 
-    TTS["Native TTS\n(macOS say / Windows System.Speech / espeak)"]
-    Fallback["pyttsx3\n(optional)"]
-    Net["HTTP / JSON"]
-
-    CLI --> Core
-    API --> Core
-    Frontend -->|POST /read| Net --> API
-    Core --> TTS
-    Core --> Fallback
-```
 
 ## Install
 
@@ -83,7 +70,7 @@ make frontend-install
 Run web UI:
 
 ```sh
-make dev
+make dev-fullstack
 ```
 
 The web UI appears at `http://localhost:19006` by default.
@@ -96,6 +83,6 @@ The web UI appears at `http://localhost:19006` by default.
 - `make format`
 - `make lint`
 - `make deploy` (API only)
-- `make dev` (API + Expo web)
+- `make dev-fullstack` (API + Expo web)
 - `make clean`
 - `make architecture-png`

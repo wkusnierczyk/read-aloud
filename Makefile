@@ -17,7 +17,7 @@ BUILD = $(PYTHON) -m build
 IP_CMD = $(PYTHON) -c "import socket; ip='127.0.0.1'; sock=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); \
 sock.connect(('8.8.8.8', 80)); ip=sock.getsockname()[0]; sock.close(); print(ip)"
 
-.PHONY: install install-dev build test format lint deploy dev frontend-install frontend-web frontend-start clean run list-voices architecture-png
+.PHONY: install install-dev build test format lint backend-run dev-fullstack frontend-install frontend-web frontend-start clean cli-run list-voices architecture-png
 
 install:
 	$(PYTHON) -m pip install -e .
@@ -37,13 +37,12 @@ format:
 lint:
 	$(RUFF) check src tests
 
-deploy:
-	@IP=$$($(IP_CMD)); \
-	echo "API: http://$${IP}:$(API_PORT)"; \
-	echo "Frontend (Expo web): http://$${IP}:$(FRONTEND_PORT)"; \
-	$(PYTHON) -m uvicorn $(API_APP) --host $(API_HOST) --port $(API_PORT)
+clean:
+	rm -rf build dist *.egg-info
+	find . -type d -name "__pycache__" -exec rm -rf {} +
 
-dev:
+
+fullstack-run:
 	@IP=$$($(IP_CMD)); \
 	echo "API: http://$${IP}:$(API_PORT)"; \
 	echo "Frontend (Expo web): http://$${IP}:$(FRONTEND_PORT)"; \
@@ -51,6 +50,12 @@ dev:
 	$(PYTHON) -m uvicorn $(API_APP) --host $(API_HOST) --port $(API_PORT) & \
 	API_PID=$$!; \
 	EXPO_PUBLIC_API_BASE_URL=http://$${IP}:$(API_PORT) $(NPM) --prefix $(FRONTEND_DIR) run web
+
+backend-run:
+	@IP=$$($(IP_CMD)); \
+	echo "API: http://$${IP}:$(API_PORT)"; \
+	echo "Frontend (Expo web): http://$${IP}:$(FRONTEND_PORT)"; \
+	$(PYTHON) -m uvicorn $(API_APP) --host $(API_HOST) --port $(API_PORT)
 
 frontend-install:
 	$(NPM) --prefix $(FRONTEND_DIR) install
@@ -61,16 +66,11 @@ frontend-web:
 frontend-start:
 	$(NPM) --prefix $(FRONTEND_DIR) run start
 
-clean:
-	rm -rf build dist *.egg-info
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-
-# Shortcuts for testing without installing
-run:
+cli-run:
 	$(PYTHON) $(CLI) $(ARGS)
 
 list-voices:
 	$(PYTHON) $(CLI) --list-voices
 
-architecture-png:
-	$(MMD_CLI) -i $(ARCH_DIAGRAM) -o $(ARCH_PNG)
+generate-architecture-diagrams:
+	mmdc -i $(ARCH_DIAGRAM) -o $(ARCH_PNG)

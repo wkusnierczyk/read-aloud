@@ -20,7 +20,6 @@ _playback_lock = threading.Lock()
 _current_playback = None
 
 
-
 class ReadRequest(BaseModel):
     text: Optional[str] = None
     url: Optional[str] = None
