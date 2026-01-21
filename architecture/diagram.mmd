@@ -1,0 +1,17 @@
+flowchart LR
+    subgraph Local["Local Environment"]
+        Core["Core Library\n(aloud.core)"]
+        CLI["CLI\n(aloud.cli)"]
+        API["API Service\n(aloud.api)"]
+        Frontend["Frontend\n(React Native / Expo)"]
+    end
+
+    TTS["Native TTS\n(macOS say / Windows System.Speech / espeak)"]
+    Fallback["pyttsx3\n(optional)"]
+    Net["HTTP / JSON"]
+
+    CLI --> Core
+    API --> Core
+    Frontend -->|POST /read| Net --> API
+    Core --> TTS
+    Core --> Fallback
