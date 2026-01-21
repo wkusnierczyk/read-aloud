@@ -42,7 +42,9 @@ def _resolve_text(payload: ReadRequest) -> str:
 
 def _run_read(text: str, voice: Optional[str], speed: float) -> None:
     engine = AloudEngine()
-    engine.load_text(text).set_properties(voice_name=voice, speed_multiplier=speed).speak()
+    engine.load_text(text).set_properties(
+        voice_name=voice, speed_multiplier=speed
+    ).speak()
 
 
 @app.get("/health")
@@ -61,4 +63,3 @@ def read(payload: ReadRequest, background_tasks: BackgroundTasks) -> dict:
     text = _resolve_text(payload)
     background_tasks.add_task(_run_read, text, payload.voice, payload.speed)
     return {"status": "started"}
-

@@ -7,40 +7,42 @@ import pyttsx3
 import requests
 from bs4 import BeautifulSoup
 
+
 class ContentFetcher:
     """Handles data retrieval from various sources."""
-    
+
     def fetch(self, source, is_url=False):
         if is_url:
             return self._fetch_url(source)
-        return source # Treat as raw text if not URL
+        return source  # Treat as raw text if not URL
 
     def _fetch_url(self, url):
         try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
+            headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(url, headers=headers)
             response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
+
+            soup = BeautifulSoup(response.text, "html.parser")
+
             # Remove scripts and styles
             for script in soup(["script", "style", "nav", "footer"]):
                 script.decompose()
-                
+
             text = soup.get_text()
-            
+
             # Clean up whitespace
             lines = (line.strip() for line in text.splitlines())
             chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            clean_text = '\n'.join(chunk for chunk in chunks if chunk)
-            
+            clean_text = "\n".join(chunk for chunk in chunks if chunk)
+
             return clean_text
         except Exception as e:
             return f"Error fetching URL: {str(e)}"
 
+
 class AloudEngine:
     """Fluent API wrapper for TTS."""
-    
+
     def __init__(self):
         self._engine = None
         self._init_error = None
@@ -111,7 +113,9 @@ class AloudEngine:
                 text=True,
             )
         except subprocess.CalledProcessError as exc:
-            raise RuntimeError(f"Failed to list voices via '{voice_cmd}': {exc}") from exc
+            raise RuntimeError(
+                f"Failed to list voices via '{voice_cmd}': {exc}"
+            ) from exc
 
         voices = []
         for line in result.stdout.splitlines():
@@ -161,7 +165,12 @@ class AloudEngine:
             locale = item.get("Culture", "")
             voice_id = item.get("Id", "") or name
             voices.append(
-                {"id": name or voice_id, "name": name, "locale": locale, "voice_id": voice_id}
+                {
+                    "id": name or voice_id,
+                    "name": name,
+                    "locale": locale,
+                    "voice_id": voice_id,
+                }
             )
         return voices
 
@@ -175,17 +184,17 @@ class AloudEngine:
         if not self._engine:
             return self
         # Handle Speed
-        current_rate = self._engine.getProperty('rate')
+        current_rate = self._engine.getProperty("rate")
         new_rate = int(current_rate * speed_multiplier)
-        self._engine.setProperty('rate', new_rate)
+        self._engine.setProperty("rate", new_rate)
 
         # Handle Voice Selection
         if voice_name:
-            voices = self._engine.getProperty('voices')
+            voices = self._engine.getProperty("voices")
             for voice in voices:
                 # Fuzzy match: if provided name is in the voice ID or name
                 if voice_name.lower() in voice.name.lower() or voice_name in voice.id:
-                    self._engine.setProperty('voice', voice.id)
+                    self._engine.setProperty("voice", voice.id)
                     break
         return self
 
@@ -200,7 +209,7 @@ class AloudEngine:
             self._raise_init_error()
 
         voices = []
-        for v in self._engine.getProperty('voices'):
+        for v in self._engine.getProperty("voices"):
             locale = ""
             if getattr(v, "languages", None):
                 raw_locale = v.languages[0]
