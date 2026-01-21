@@ -6,13 +6,23 @@ It reads text or websites aloud by driving the platform-native speech commands
 (`say`, `System.Speech`, `espeak`).
 When those are not available, `pyttsx3` is used as a fallback. 
 
-Includes:
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Install](#install)
+- [CLI](#cli)
+- [API](#api)
+- [Frontend (Expo)](#frontend-expo)
+- [About](#about)
+
+## Architecture
+
+Aloud includes:
+
 - Core library (`aloud.core`)
 - CLI (`aloud.cli`)
 - API service (`aloud.api`)
 - React Native (Expo) frontend
-
-## Architecture
 
 ![Architecture diagram](architecture/diagram.png)
 
@@ -101,4 +111,3 @@ aloud: A CLI tool to read text or websites aloud.
 ├─ source:     https://github.com/wkusnierczyk/read-aloud
 └─ licence:    MIT https://opensource.org/licenses/MIT
 ```
-
