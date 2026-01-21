@@ -90,3 +90,15 @@ make fullstack-run
 
 The web UI appears at `http://localhost:19006` by default.
 
+# About
+
+```bash
+$ aloud --about
+
+aloud: A CLI tool to read text or websites aloud.
+├─ version:    0.1.1
+├─ developer:  mailto:you@example.com
+├─ source:     https://github.com/wkusnierczyk/read-aloud
+└─ licence:    MIT https://opensource.org/licenses/MIT
+```
+
